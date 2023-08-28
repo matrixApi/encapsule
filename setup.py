@@ -1,4 +1,4 @@
-VERSION = '0.1.1'
+VERSION = '0.1.2'
 
 try: from setuptools import setup, find_packages
 except ImportError: from distutils.core import setup, find_packages
@@ -29,7 +29,7 @@ dict (name = "encapsule",
                      'Topic :: System :: Systems Administration'])
 
 SETUP_CONF['version'] = VERSION
-SETUP_CONF['url'] = ''
+SETUP_CONF['url'] = 'https://github.com/matrixApi/encapsule'
 
 SETUP_CONF['author'] = ''
 SETUP_CONF['author_email'] = ''
