@@ -140,6 +140,9 @@ def parseCmdln_subjective(argv):
     parser = OptionParser()
     parser.add_option('--post-context', action = 'store_true')
 
+    parser.add_option('--check-access-resource')
+    parser.add_option('--check-access', default = 'read')
+
     (options, args) = parser.parse_args(argv)
 
     # isolate_bin invocations are always 'compartmentalized',
@@ -213,6 +216,18 @@ def main(argv):
     # import pdb; pdb.set_trace()
     ((parentOptions, parentArgs), isoOptions) = \
         parseCmdln_subjective(argv)
+
+
+    resource = isoOptions.check_access_resource
+    if resource:
+        result = isolate_sys.checkAccessCurrentFrameUser \
+            (isolate_sys.taskId(), # XXX Is this right?
+             resource, isoOptions.check_access)
+
+        # result = json.dumps(result)
+
+        return (parentOptions, result)
+
 
     return (parentOptions, Component.Locate \
         (parentOptions, *parentArgs)    \
