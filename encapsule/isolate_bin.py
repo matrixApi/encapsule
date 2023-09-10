@@ -142,10 +142,18 @@ def parseCmdln_subjective(argv):
     # Todo: wrong
     from optparse import OptionParser
     parser = OptionParser()
+    parser.add_option('-x', '--argument', '--arg', action = 'append', dest = 'arguments')
+    parser.add_option('--action')
+
     parser.add_option('--post-context', action = 'store_true')
 
-    parser.add_option('--check-access-resource')
+    parser.add_option('--check-access-resource', '--check', action = 'store_const',
+        const = 'check-access-resource', dest = 'action')
+
     parser.add_option('--check-access', default = 'read')
+
+    parser.add_option('--create-user', action = 'store_const',
+        const = 'create-user', dest = 'action')
 
     (options, args) = parser.parse_args(argv)
 
@@ -216,6 +224,34 @@ class Component:
             .decode() # Why subprocess returns bytes stream,
                       # but sys.stdout is default opened str.
 
+
+mainActions = \
+    {'create-user': lambda parentOptions, parentArgs, isoOptions:
+        # ENCAPSULE_CREATEUSERBIN=`which useradd` \
+        # ENCAPSULE_CREATEUSER_NAMEFMT='encapsule:{name}' \
+        #     .isolate --create-user itham
+
+        (parentOptions, isolate_sys.createUser_linuxString
+            (*(parentArgs + isoOptions.arguments))),
+
+     'create-user-set': lambda parentOptions, parentArgs, isoOptions:
+        (parentOptions, '\n\n'.join
+            (map(isolate_sys.createUser_linuxString,
+                 parentArgs + isoOptions.arguments))),
+
+     'check-access-resource': lambda parentOptions, parentArgs, isoOptions:
+        (parentOptions, isolate_sys.checkAccessCurrentFrameUser \
+            (isolate_sys.taskId(), # XXX Is this right?
+             resource, isoOptions.check_access)),
+
+
+     # Default action:
+     None: lambda parentOptions, parentArgs, isoOptions:
+            (parentOptions, Component.Locate \
+                (parentOptions, *parentArgs) \
+                    .pipeStringContext(isoOptions))}
+
+
 def main(argv):
     # import pdb; pdb.set_trace()
     ((parentOptions, parentArgs), isoOptions) = \
@@ -225,20 +261,10 @@ def main(argv):
     # Todo: configurable
     initWrlc_bin.initWrlc()
 
-    resource = isoOptions.check_access_resource
-    if resource:
-        result = isolate_sys.checkAccessCurrentFrameUser \
-            (isolate_sys.taskId(), # XXX Is this right?
-             resource, isoOptions.check_access)
 
-        # result = json.dumps(result)
+    return mainActions[isoOptions.action] \
+        (parentOptions, parentArgs, isoOptions)
 
-        return (parentOptions, result)
-
-
-    return (parentOptions, Component.Locate \
-        (parentOptions, *parentArgs)    \
-            .pipeStringContext(isoOptions))
 
 
 class keyword:

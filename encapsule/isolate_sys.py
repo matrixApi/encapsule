@@ -16,6 +16,7 @@ ENCAPSULE_COMPONENTS_PATH_ENV = 'ENCAPSULE_COMPONENTS'
 ENCAPSULE_OWNERSHIP_ENV = 'ENCAPSULE_OWNERSHIP'
 
 ENCAPSULE_CREATEUSERBIN_ENV = 'ENCAPSULE_CREATEUSERBIN'
+ENCAPSULE_CREATEUSER_NAMEFMT_ENV = 'ENCAPSULE_CREATEUSER_NAMEFMT'
 
 
 class NoFramesError(RuntimeError):
@@ -273,11 +274,11 @@ def checkAccessCurrentFrameUser(i, *args, **kwd):
 
 
 def createUser(name, argsOf, *args, **kwd):
-	return io.path(os_environ['ENCAPSULE_CREATEUSERBIN_ENV']) \
+	return io.path(os_environ[ENCAPSULE_CREATEUSERBIN_ENV]) \
 		.pipe(*argsOf(name, *args, **kwd))
 
 def linux_userAdd_strict(name, *args, **kwd):
-	yield name
+	yield os_environ[ENCAPSULE_CREATEUSER_NAMEFMT_ENV].format(name = name)
 
 def createUser_linuxStrict(name, *args, **kwd):
 	return createUser(name, linux_userAdd_strict, *args, **kwd)
