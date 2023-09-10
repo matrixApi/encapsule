@@ -92,18 +92,22 @@ assets/Itham/services:
 '''
 
 import sys
-import op
 
 from json import loads as deserialize, dumps as serialize
 from contextlib import contextmanager
-
-from op.platform.path import CalledProcessError
 
 from . import isolate_sys
 
 __all__ = ['exeCall', 'exeCallObject', 'keyword']
 
+
 publicName = hash
+
+def initWrlc_bin():
+    isolate_sys.initWrlc()
+    exeCall.error = exeCallObject.error = \
+        isolate_sys.CalledProcessError
+
 
 def invocation(argv = None):
     try: (options, output) = main(argv)
@@ -218,6 +222,9 @@ def main(argv):
         parseCmdln_subjective(argv)
 
 
+    # Todo: configurable
+    initWrlc_bin.initWrlc()
+
     resource = isoOptions.check_access_resource
     if resource:
         result = isolate_sys.checkAccessCurrentFrameUser \
@@ -272,11 +279,8 @@ def exeCall(name, *args, **kwd):
 def exeCallObject(*args, **kwd):
     return deserialize(exeCall(*args, **kwd))
 
-exeCall.error = CalledProcessError
-exeCall.keyword = keyword
 
-exeCallObject.error = CalledProcessError
-exeCallObject.keyword = keyword
+exeCall.keyword = exeCallObject.keyword = keyword
 
 
 if __name__ == '__main__':

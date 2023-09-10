@@ -15,11 +15,19 @@ ENCAPSULE_STORE_ENV = 'ENCAPSULE_KERNEL'
 ENCAPSULE_COMPONENTS_PATH_ENV = 'ENCAPSULE_COMPONENTS'
 ENCAPSULE_OWNERSHIP_ENV = 'ENCAPSULE_OWNERSHIP'
 
+ENCAPSULE_CREATEUSERBIN_ENV = 'ENCAPSULE_CREATEUSERBIN'
+
 
 class NoFramesError(RuntimeError):
 	pass
 class NoAccessException(Exception):
 	pass
+
+
+def initWrlc():
+    global CalledProcessError
+    import op
+    from op.platform.path import CalledProcessError
 
 
 # Storage.
@@ -108,9 +116,11 @@ def destroydirs(name, force = False):
 	else:
 		print(f'removing {name}')
 
-def restrict_path(root, path):
-	r = root = io.path(root)
+def restrict_path(root, path, noConvert = False):
+	if not noConvert:
+		root = io.path(root)
 
+	r = root
 	for p in path:
 		if p != '..' or r != root:
 			# Note: empty components are ignored.
@@ -140,6 +150,10 @@ def setTaskFrame_pid(i, pid, compartment):
 
 	newU = f'{i}:processId:{ui}'
 	store(storageClass.TASKS, newU, pid)
+
+    # XXX is this right?
+    store(storageClass.TASKS, f'{i}:userId:{ui}',
+              userId or effectiveContextId())
 
 	store(storageClass.TASKS, fu, ui)
 
@@ -246,6 +260,27 @@ def grantAccess(userId, name, access = 'read'):
 
 def checkAccessCurrentUser(*args, **kwd):
 	return checkAccess(effectiveContextId(), *args, **kwd)
+
+
+def checkAccessCurrentFrameUser(i, *args, **kwd):
+        fu = f'{i}:frameCurrent'
+
+        u = int(retrieve(storageClass.TASKS, fu, default = -1))
+
+        currentUser = retrieve(storageClass.TASKS, f'{i}:userId:{u}')
+
+        return checkAccess(currentUser, *args, **kwd)
+
+
+def createUser(name, argsOf, *args, **kwd):
+	return io.path(os_environ['ENCAPSULE_CREATEUSERBIN_ENV']) \
+		.pipe(*argsOf(name, *args, **kwd))
+
+def linux_userAdd_strict(name, *args, **kwd):
+	yield name
+
+def createUser_linuxStrict(name, *args, **kwd):
+	return createUser(name, linux_userAdd_strict, *args, **kwd)
 
 
 # Process OM
