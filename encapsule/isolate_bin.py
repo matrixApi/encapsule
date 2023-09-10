@@ -101,11 +101,23 @@ from . import isolate_sys
 __all__ = ['exeCall', 'exeCallObject', 'keyword']
 
 
+class synthetic(dict):
+    def __init__(self, *args, **kwd):
+        dict.__init__(self, *args, **kwd)
+        self.__dict__ = self
+
+
 publicName = hash
 
 def initWrlc_bin():
+    global CalledProcessError
+
+    # todo: combine these?
     isolate_sys.initWrlc()
+    isolate_sys.install()
+
     exeCall.error = exeCallObject.error = \
+    CalledProcessError = \
         isolate_sys.CalledProcessError
 
 
@@ -129,14 +141,24 @@ def invocation(argv = None):
     sys.stdout.write(output)
 
 
-def buildOptions_parent(options):
-    return namespace \
-        (# "chroot" mount point:
-         component_root = isolate_sys.ENCAPSULE_COMPONENTS_PATH,
+def optionsCopy(options, r, names):
+    for n in names:
+        r[n] = getattr(options, n, None) # options.get(n)
 
-         compartmentalize = options.get('compartmentalize'),
-         segments = options.get('segments'),
-         post_context = options.get('post_context'))
+    return r
+
+
+SEMIFULL_OPTIONS = ['action', 'segments', 'post_context', 'arguments']
+FULL_OPTIONS = SEMIFULL_OPTIONS + ['compartmentalize']
+
+def buildOptions_parent(options):
+    namespace = synthetic
+
+    return optionsCopy(options, namespace \
+        (# "chroot" mount point:
+         component_root = isolate_sys.ENCAPSULE_COMPONENTS_PATH),
+        FULL_OPTIONS)
+
 
 def parseCmdln_subjective(argv):
     # Todo: wrong
@@ -159,10 +181,13 @@ def parseCmdln_subjective(argv):
 
     # isolate_bin invocations are always 'compartmentalized',
     # for now, because it represents an entry point.
+    namespace = synthetic
+
     return ((buildOptions_parent \
-                (namespace(post_context = options.post_context,
-                           compartmentalize = True)),
-             (args[0],)), args[1:])
+                (optionsCopy(options, namespace(compartmentalize = True),
+                             SEMIFULL_OPTIONS)),
+             (None if options.action else args[0],)),
+            args if options.action else args[1:])
 
 
 class Component:
@@ -231,18 +256,20 @@ mainActions = \
         # ENCAPSULE_CREATEUSER_NAMEFMT='encapsule:{name}' \
         #     .isolate --create-user itham
 
-        (parentOptions, isolate_sys.createUser_linuxString
-            (*(parentArgs + isoOptions.arguments))),
+        (parentOptions, isolate_sys.createUser_linuxStrict
+            (*((parentArgs,) if parentArgs else () +
+                (parentOptions.arguments or ())))),
 
      'create-user-set': lambda parentOptions, parentArgs, isoOptions:
         (parentOptions, '\n\n'.join
             (map(isolate_sys.createUser_linuxString,
-                 parentArgs + isoOptions.arguments))),
+                 (parentArgs,) if parentArgs else () +
+                 (parentOptions.arguments or ())))),
 
      'check-access-resource': lambda parentOptions, parentArgs, isoOptions:
         (parentOptions, isolate_sys.checkAccessCurrentFrameUser \
             (isolate_sys.taskId(), # XXX Is this right?
-             resource, isoOptions.check_access)),
+             resource, parentOptions.check_access)),
 
 
      # Default action:
@@ -259,10 +286,10 @@ def main(argv):
 
 
     # Todo: configurable
-    initWrlc_bin.initWrlc()
+    initWrlc_bin()
 
 
-    return mainActions[isoOptions.action] \
+    return mainActions[parentOptions.action] \
         (parentOptions, parentArgs, isoOptions)
 
 
