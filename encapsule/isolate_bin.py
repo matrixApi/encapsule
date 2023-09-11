@@ -26,12 +26,6 @@ assets/Itham/services:
             return act(task$, [compartmentalize] + args$(), \
                 keywords$())
 
-            usage:
-                return task$compartmentalize(none, 'instance', \
-                    '-d', arguments.strip()).outcome <- arguments:
-
-                    -Ssystem:initialization=system/initialize
-
 
         def argsOf(kwdClass, args, kwd):
             for pair in keywords$().items():
@@ -101,6 +95,19 @@ assets/Itham/services:
         return install
 
 '''
+
+INSTANCE_1 = '''\
+# -f install-object.ela encapsule.isolate_bin.INSTANCE_1 run-isolate.ela
+# -f run-isolate.ela -Ssystem:namespace=secondary
+
+return act(task$compartmentalize.action \
+    (none, 'instance', '-d', arguments.strip()), \
+    args$()).outcome() <- arguments:
+
+    -Ssystem:initialization=system/initialize
+
+'''
+
 
 import sys
 
