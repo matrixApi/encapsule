@@ -22,6 +22,17 @@ assets/Itham/services:
         XXX:
             This needs 
 
+        def task$compartmentalize(context, name):
+            return act(task$, [compartmentalize] + args$(), \
+                keywords$())
+
+            usage:
+                return task$compartmentalize(none, 'instance', \
+                    '-d', arguments.strip()).outcome <- arguments:
+
+                    -Ssystem:initialization=system/initialize
+
+
         def argsOf(kwdClass, args, kwd):
             for pair in keywords$().items():
                 args.append(act(kwdClass, pair))
