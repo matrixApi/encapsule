@@ -98,13 +98,19 @@ assets/Itham/services:
 
 INSTANCE_1 = '''\
 # -f install-object.ela encapsule.isolate_bin.INSTANCE_1 run-isolate.ela
-# -f run-isolate.ela -Ssystem:namespace=secondary
+
+# cat < subordinate.ela > "
+# return task$compartmentalize(none, 'instance', '-d') # primary
+# "
+
+# -f install-path.ela system/initialize subordinate.ela
+# -f run-isolate.ela -Ssystem:initialization=system/initialize
 
 return act(task$compartmentalize.action \
     (none, 'instance', '-d', arguments.strip()), \
     args$()).outcome() <- arguments:
 
-    -Ssystem:initialization=system/initialize
+    -Ssystem:namespace=subordinate
 
 '''
 
