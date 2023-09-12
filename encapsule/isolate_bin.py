@@ -100,7 +100,8 @@ INSTANCE_1 = '''\
 # -f install-object.ela encapsule.isolate_bin.INSTANCE_1 run-isolate.ela
 
 # cat < subordinate.ela > "
-# return task$compartmentalize(none, 'instance', '-d') # primary
+# if task$compartmentalize(none, 'instance', '-d').outcome().yes: # primary
+#     shutdown()
 # "
 
 # -f install-path.ela system/initialize subordinate.ela
