@@ -1,8 +1,6 @@
 '''
 [MUD]
-document_class = WRLC
-
-[WRLC]
+document_class = MUD
 system_classes =
 	encapsulated=encapsule.structure.Factory
 
@@ -10,7 +8,7 @@ system_classes =
 encapsule:
 	interfaces/views::
 		(encapsulated$view):
-			- 'system:classification'
+			- 'public:classification'
 
 '''
 
@@ -30,28 +28,29 @@ class EncapsulatedView(View):
 	def __init__(self, prefix):
 		self._prefix = prefix
 
-	def _requestUserId(self, request):
-		pass
-
-	def _argsFull(self, request, path):
-		if self._prefix:
-			checkAccess = vmCurrentTask().checkAccess
-
-			if isinstance(self._prefix, str):
-				checkAccess(['system:encapsulate:view', \
-					self._prefix, path], 'encapsulate')
-
-				yield self._prefix
-			else:
-				checkAccess(['system:encapsulate:view', \
-					'/'.join(self._prefix), path], 'encapsulate')
-
-				yield from self._prefix
-
-		yield path
-
 	def _render(self, request, path, **kwd):
 		args = list(self._argsFull(request, path))
 
 		return exeCall(*args, userId = \
 			self._requestUserId(request))
+
+	def _requestUserId(self, request):
+		pass
+
+	def _argsFull(self, request, path):
+		resource = self._prefix
+		if resource:
+			if isinstance(resource, str):
+				args = [resource]
+
+			else:
+				args = resource
+				resource = '/'.join(resource)
+
+			vmCurrentTask().checkAccess \
+				(['system:encapsulate:view', \
+				  resource, path], 'encapsulate')
+
+			yield from args
+
+		yield path
