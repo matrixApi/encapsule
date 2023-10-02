@@ -12,7 +12,6 @@ encapsule:
 	interfaces/views::
 		(encapsulated$public$view):
 			- 'public:classification'
-
 '''
 
 from kernelos.structure import Submapping, View
@@ -79,3 +78,64 @@ class EncapsulatedView(View):
 			self._checkAccess('', path, programmerContext)
 
 		yield path
+
+
+
+C_IMPL = r'''\
+def rawCall(args):
+	return act('kernel/callObject$', \
+		['string.rawCall'] + args)
+
+def renderCall(name):
+	return render(code, mapping(call = \
+		rawCall([name] + args.value + \
+		args$slice(1))) \
+
+	<- args:
+		- '.isolate'
+		- 'public:classification'
+
+	<- code:
+		// #include "encapsule.h"
+
+		void main(int argc, char **argv)
+		{
+			if (argc > 1)
+			{
+				encapsuleSetIdentity(argv[0]);
+				{{ call|safe }};
+			}
+		}
+
+
+def preparefiles(wd):
+	sourcefile = wd.temporary + '.c'
+	objectfile = targetfile(sourcefile, 'o')
+
+	return [sourcefile, objectfile]
+
+def compileCall(wd, name):
+	scatter(preparefiles(wd), 'sourcefile', 'objectfile')
+
+	sourcefile.write(act(renderCall, \
+		[name] + keywords$('args', [])))
+
+	keywords$('gcc').pipe \
+		('-shared', '-o', objectfile, sourcefile, \
+		 '-L' + keywords$('libpath'), '-lencapsule')
+
+	return objectfile.pipe
+		
+
+path = 'kernel/lookup$'('builtins.io.root')
+
+return compileCall,
+	(path.tmp, 'encapsuleCreateUserTask', \
+	 args = args.value, \
+	 gcc = path.usr.bin.gcc, \
+	 libpath = path.usr.lib) \
+		(programmer()) <- args:
+
+		- get-identity
+
+'''
